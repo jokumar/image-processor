@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: processor-service
+  labels:
+    name: processor-service
+    app: processor-app
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: processor-app
+    name: processor-pod

@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:29092
+      bindings:
+        event-consumer:
+          destination: data_stream
+          contentType: application/json
+        event-producer:
+          destination: status_stream
+          contentType: application/json
+server:
+  port: 8082
+
+remote:
+  storage:
+    url: http://ptc-storage:8081/api/v1/blob

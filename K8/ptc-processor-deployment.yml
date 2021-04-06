@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ptc-processor-deploy
+  labels:
+    name: ptc-processor-deploy
+    app: processor-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+        app: processor-app
+        name: processor-pod
+  template:
+    metadata:
+      name: processor-pod
+      labels:
+        app: processor-app
+        name: processor-pod
+    spec:
+      containers:
+        - name: ptc-file-processor
+          image: joy1987/ptc-file-processor:latest
+          ports:
+            - containerPort: 8080
+          env:                  # Environment variables supplied to the Pod
+          - name: SPRING_DATASOURCE_USERNAME # Name of the environment variable
+            valueFrom:          # Get the value of environment variable from kubernetes secrets
+              secretKeyRef:
+                name: mysql-user-pass
+                key: username
+          - name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-user-pass
+                key: password
+          - name: SPRING_DATASOURCE_URL
+            valueFrom:
+              secretKeyRef:
+                name: mysql-db-url
+                key: url  
+          - name: SPRING_PROFILES_ACTIVE 
+            value: 'kube'       

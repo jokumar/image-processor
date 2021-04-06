@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: ptc-storage-deploy
+  labels:
+    name: ptc-storage-deploy
+    app: storage-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-app
+      name: storage-pod
+  template:
+    metadata:
+      name: ptc-storage-pod
+      labels:
+        app: storage-app
+        name: storage-pod
+    spec:
+      containers:
+        - name: ptc-storage
+          image: joy1987/ptc-file-storage:latest
+          ports:
+          - containerPort: 80

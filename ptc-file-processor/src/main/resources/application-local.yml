@@ -1,0 +1,36 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:29092
+      bindings:
+        event-consumer:
+          destination: status_stream
+          contentType: application/json
+        event-producer:
+          destination: data_stream
+          contentType: application/json
+  application:
+    name: file-processor
+  datasource:
+    url: jdbc:mysql://ptc-mysql:3306/fileDb
+    username: admin
+    password: admin
+  jpa:
+    hibernate:
+      ddl-auto: update
+server:
+  servlet:
+    context-path: /ptc-file-processor
+  port: 8080
+remote:
+  storage:
+    url: http://ptc-storage:8081/api/v1/blob
+
+logging:
+  level:
+    org:
+      apache:
+        http: DEBUG
+

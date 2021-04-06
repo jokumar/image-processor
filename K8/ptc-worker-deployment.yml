@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: worker-deploy
+  labels:
+    name: worker-deploy
+    app: worker-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-app
+      name: worker-pod
+  template:
+    metadata:
+      name: worker-pod
+      labels:
+        app: worker-app
+        name: worker-pod
+    spec:
+      containers:
+        - name: ptc-worker
+          image: joy1987/ptc-worker:latest

@@ -1,0 +1,250 @@
+openapi: 3.0.0
+info:
+  version: '1.0.0'
+  title: 'Image Processing Service'
+  description: 'API for  accepting  jobs and query the status of these jobs to process Image'
+  contact:
+    name: Joydip
+    url: http://geeks18.com
+    email: joydipkumar@gmail.com
+
+
+paths:
+  /job/{jobId}:
+    get:
+      description: Get the result of the Job
+      operationId: getJobDetails
+      parameters:
+        - name: jobId
+          in: path
+          description: Job Id
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]+$'
+            minLength: 1
+            maxLength: 10000
+          example: 'X123456'  
+      responses:
+       
+        '200':
+          description: Successful Result of the Job
+          content:
+            application/json:
+              schema:
+               $ref: '#/components/schemas/Job'
+                  
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+        
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+               
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+  
+  /job/image:
+    post:
+      description: create a Job by uploading an image
+      operationId: submitJob
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/file-request'
+      responses:
+        '201':
+          description: Create a Job  
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/file-response"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+                
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+               
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+  /job/{jobId}/status:
+    get:
+      description: Get the status of the Job
+      operationId: getJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          description: Job Id
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]+$'
+            minLength: 1
+            maxLength: 10000
+          example: 'X123456'  
+      responses:
+        '200':
+          description: Get the of the Job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/status-response"
+                
+                  
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+        
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+               
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Job:
+      description: Model containg all the Job details
+      properties:
+        id:
+          type: string
+          description:  Job Status Id 
+          example: <JobId>
+
+        tenantId:
+          type: string
+          
+        clientId:
+          type: string
+        
+        payloadLocation:
+          type: string
+          
+        payloadSize:
+          type: string
+          
+        status:
+          type: string  
+          
+    file-request:
+      description: Model for file upload
+      allOf:
+        - required:
+            - content
+            - encoding
+            - md5
+        - type: object
+          properties:
+            encoding:
+              type: string
+              example: base64
+            fileName:
+              type: string
+              example: 'image.png'
+            md5:
+              type: string
+              example: '<checksum>'
+
+            content:
+              type: string
+              example: '<binary-data>'
+          
+    file-response:
+      description: Model for file upload response
+      properties:
+        jobId:
+          type: string
+          description:  Job Status Id 
+          example: <JobId>
+        
+        payloadLocation:
+          type: string
+          
+        payloadSize:
+          type: string
+    
+    status-response:
+      description: Model for Job status
+      properties:
+        status:
+          type: string
+          description:  Status of the Job
+          example: RUNNING
+
+
+    Error:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          description: error code
+        errrorDescription:
+          type: string
+          description: error description
