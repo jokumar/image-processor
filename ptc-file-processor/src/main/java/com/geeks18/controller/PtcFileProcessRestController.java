@@ -43,28 +43,28 @@ public class PtcFileProcessRestController implements JobApi {
 
     @Override
     public ResponseEntity<Job> getJobDetails(String jobId) {
-         Job job = new Job();
-         JobEntity entity = jobRepository.findById(Long.valueOf(jobId)).orElseThrow(()->{
-             logger.error("Job not found with job Id "+jobId);
-             return new ResourceNotFoundException(ErrorConstants.ERR_3_CD,ErrorConstants.ERR_3_DESC+ "  "+ jobId);
-         });
-            job.setStatus(entity.getJobStatus());
-            job.setClientId(entity.getClientId());
-            job.setPayloadLocation(entity.getPayloadLocation());
-            job.setPayloadSize(entity.getPayloadSize());
-            job.setTenantId(entity.getTenantId());
-            job.setId(String.valueOf(entity.getJobId()));
+        Job job = new Job();
+        JobEntity entity = jobRepository.findById(Long.valueOf(jobId)).orElseThrow(() -> {
+            logger.error("Job not found with job Id " + jobId);
+            return new ResourceNotFoundException(ErrorConstants.ERR_3_CD, ErrorConstants.ERR_3_DESC + "  " + jobId);
+        });
+        job.setStatus(entity.getJobStatus());
+        job.setClientId(entity.getClientId());
+        job.setPayloadLocation(entity.getPayloadLocation());
+        job.setPayloadSize(entity.getPayloadSize());
+        job.setTenantId(entity.getTenantId());
+        job.setId(String.valueOf(entity.getJobId()));
 
         return ResponseEntity.status(HttpStatus.OK).body(job);
     }
 
     @Override
     public ResponseEntity<StatusResponse> getJobStatus(String jobId) {
-        StatusResponse response=new StatusResponse();
+        StatusResponse response = new StatusResponse();
 
-        JobEntity entity = jobRepository.findById(Long.valueOf(jobId)).orElseThrow(()->{
-            logger.error("Job not found with job Id "+jobId);
-            return new ResourceNotFoundException(ErrorConstants.ERR_3_CD,ErrorConstants.ERR_3_DESC+ "  "+ jobId);
+        JobEntity entity = jobRepository.findById(Long.valueOf(jobId)).orElseThrow(() -> {
+            logger.error("Job not found with job Id " + jobId);
+            return new ResourceNotFoundException(ErrorConstants.ERR_3_CD, ErrorConstants.ERR_3_DESC + "  " + jobId);
         });
 
         response.setStatus(entity.getJobStatus());
@@ -75,66 +75,75 @@ public class PtcFileProcessRestController implements JobApi {
 
     @Override
     public ResponseEntity<FileResponse> submitJob(String authorization, @Valid FileRequest fileRequest) {
-        String tenantId="";
-        String clientId="";
-        try{
+        String tenantId = "";
+        String clientId = "";
+        JobEntity entity = new JobEntity();
+        try {
 
-            if(! ProcessorUtil.isCheckSumValid(fileRequest.getContent(),fileRequest.getMd5())){
-                logger.error("MD5 hash validation failed");
-                throw new RequestValidationException(ErrorConstants.ERR_6_CD, ErrorConstants.ERR_6_DESC);
+            validateMd5CheckSum(fileRequest);
 
-            }
-            JSONObject obj = ProcessorUtil.decodeJWTToken(authorization);
-            if (!obj.has("tid") || !obj.has("oid"))
-                throw new JWTTokenValidationException(ErrorConstants.ERR_2_CD, ErrorConstants.ERR_2_DESC);
+            validateJWTToken(authorization, entity);
 
-            tenantId = String.valueOf(obj.get("tid"));
-             clientId = String.valueOf(obj.get("oid"));
 
-        }catch (JSONException e){
-            logger.error("Error in parsing json web token",e);
+        } catch (JSONException e) {
+            logger.error("Error in parsing json web token", e);
             throw new JWTTokenValidationException(ErrorConstants.ERR_2_CD, ErrorConstants.ERR_2_DESC);
-        }
-        catch (NoSuchAlgorithmException e){
-            logger.error("Error in validating the md5 hash",e);
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Error in validating the md5 hash", e);
             throw new RequestValidationException(ErrorConstants.ERR_6_CD, ErrorConstants.ERR_6_DESC);
         }
 
-        String blobId=fileUploaderService.uploadFile(fileRequest.getEncoding(),fileRequest.getMd5(),fileRequest.getContent(),fileRequest.getFileName());
-        if(!StringUtils.hasLength(blobId)){
+        String blobId = fileUploaderService.uploadFile(fileRequest.getEncoding(), fileRequest.getMd5(), fileRequest.getContent(), fileRequest.getFileName());
 
-            throw new MessageCommunicationException(ErrorConstants.ERR_4_CD,ErrorConstants.ERR_4_DESC);
+        if (!StringUtils.hasLength(blobId)) {
+
+            throw new MessageCommunicationException(ErrorConstants.ERR_4_CD, ErrorConstants.ERR_4_DESC);
         }
 
-        JobEntity entity =new JobEntity();
+
         entity.setJobStatus("RUNNING");
-        entity.setTenantId(tenantId);
-        entity.setClientId(clientId);
+
         jobRepository.save(entity);
 
-        JobMessage message=new JobMessage();
+        JobMessage message = new JobMessage();
         message.setJobId(String.valueOf(entity.getJobId()));
         message.setPayloadSize(String.valueOf(fileRequest.getContent().length()));
-        message.setPayloadUrl(blobUrl+"/"+blobId);
+        message.setPayloadUrl(blobUrl + "/" + blobId);
 
         try {
             eventStreamService.produceEvent(message);
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.error("Error in Producing Events");
             entity.setJobStatus("FAILED");
             jobRepository.save(entity);
-            throw new MessageCommunicationException(ErrorConstants.ERR_1_CD,ErrorConstants.ERR_1_DESC);
+            throw new MessageCommunicationException(ErrorConstants.ERR_1_CD, ErrorConstants.ERR_1_DESC);
         }
 
 
-
-        FileResponse response=new FileResponse();
+        FileResponse response = new FileResponse();
         response.setPayloadSize(String.valueOf(fileRequest.getContent().length()));
         response.setJobId(String.valueOf(entity.getJobId()));
-        response.setPayloadLocation(blobUrl+"/"+blobId);
+        response.setPayloadLocation(blobUrl + "/" + blobId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    private void validateJWTToken(String authorization, JobEntity entity) {
+        JSONObject obj = ProcessorUtil.decodeJWTToken(authorization);
+        if (!obj.has("tid") || !obj.has("oid"))
+            throw new JWTTokenValidationException(ErrorConstants.ERR_2_CD, ErrorConstants.ERR_2_DESC);
+
+        entity.setTenantId(String.valueOf(obj.get("tid")));
+        entity.setClientId(String.valueOf(obj.get("oid")));
+    }
+
+
+    private void validateMd5CheckSum(FileRequest fileRequest) throws NoSuchAlgorithmException {
+        if (!ProcessorUtil.isCheckSumValid(fileRequest.getContent(), fileRequest.getMd5())) {
+            logger.error("MD5 hash validation failed");
+            throw new RequestValidationException(ErrorConstants.ERR_6_CD, ErrorConstants.ERR_6_DESC);
+
+        }
+    }
 
 
 }
