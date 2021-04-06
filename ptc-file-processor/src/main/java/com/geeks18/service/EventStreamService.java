@@ -12,6 +12,9 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 
+/**
+ * EventStream Service to stream the data to Message Queue
+ */
 @Service
 public class EventStreamService {
     @Autowired

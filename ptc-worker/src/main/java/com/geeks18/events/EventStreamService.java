@@ -11,6 +11,9 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeTypeUtils;
 
+/**
+ * EventStream Service to send the event stream to the producer topic
+ */
 @Service
 public class EventStreamService {
     @Autowired

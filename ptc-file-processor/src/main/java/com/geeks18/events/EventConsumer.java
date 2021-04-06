@@ -21,12 +21,17 @@ public class EventConsumer {
     @Value("${remote.storage.url}")
     String url;
 
+    /**
+     * Consume events from the Message Queue
+     * @param msg
+     */
     @StreamListener(EventStream.INBOUND)
     public void consumeEvent(@Payload JobStatusMessage msg) {
         jobRepository.findById(Long.valueOf(msg.getJobId())).ifPresent(entity->{
             entity.setJobStatus(msg.getStatus());
             logger.info("***** File is in "+msg.getStatus()+" state ********");
             if("SUCCESS".equalsIgnoreCase(msg.getStatus())) {
+                    //If success set the paload location to download from and the payload size
                 entity.setPayloadLocation(url + "/" + msg.getName());
                 entity.setPayloadSize(msg.getPayloadSize());
             }

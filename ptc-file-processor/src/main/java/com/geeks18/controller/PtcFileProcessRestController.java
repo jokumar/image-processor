@@ -25,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.Valid;
 import java.security.NoSuchAlgorithmException;
 
-
+/**
+ * RestController API for processing file
+ */
 @RestController
 public class PtcFileProcessRestController implements JobApi {
 
@@ -41,6 +43,11 @@ public class PtcFileProcessRestController implements JobApi {
     private EventStreamService eventStreamService;
     org.slf4j.Logger logger = LoggerFactory.getLogger(PtcFileProcessRestController.class);
 
+    /**
+     * API to get the Job Details by JobId
+     * @param jobId Job Id (required)
+     * @return
+     */
     @Override
     public ResponseEntity<Job> getJobDetails(String jobId) {
         Job job = new Job();
@@ -58,6 +65,11 @@ public class PtcFileProcessRestController implements JobApi {
         return ResponseEntity.status(HttpStatus.OK).body(job);
     }
 
+    /**
+     * API to get the Job Status by JobId
+     * @param jobId Job Id (required)
+     * @return
+     */
     @Override
     public ResponseEntity<StatusResponse> getJobStatus(String jobId) {
         StatusResponse response = new StatusResponse();
@@ -73,6 +85,13 @@ public class PtcFileProcessRestController implements JobApi {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    /**
+     * API to submit a Job with the binary data
+     * It also validates the Authorization token and the Md5 hash with the binary file
+     * @param authorization  (required)
+     * @param fileRequest  (required)
+     * @return
+     */
     @Override
     public ResponseEntity<FileResponse> submitJob(String authorization, @Valid FileRequest fileRequest) {
         String tenantId = "";
@@ -80,9 +99,9 @@ public class PtcFileProcessRestController implements JobApi {
         JobEntity entity = new JobEntity();
         try {
 
-            validateMd5CheckSum(fileRequest);
+            validateMd5CheckSum(fileRequest); // Validates the Md5 checksum with the requested binary
 
-            validateJWTToken(authorization, entity);
+            validateJWTToken(authorization, entity); //Validate JWT token and retrieves the client and tenant id
 
 
         } catch (JSONException e) {
@@ -93,6 +112,7 @@ public class PtcFileProcessRestController implements JobApi {
             throw new RequestValidationException(ErrorConstants.ERR_6_CD, ErrorConstants.ERR_6_DESC);
         }
 
+        //Uploads the file to file-storage sevice
         String blobId = fileUploaderService.uploadFile(fileRequest.getEncoding(), fileRequest.getMd5(), fileRequest.getContent(), fileRequest.getFileName());
 
         if (!StringUtils.hasLength(blobId)) {
@@ -102,7 +122,7 @@ public class PtcFileProcessRestController implements JobApi {
 
 
         entity.setJobStatus("RUNNING");
-
+        //Save the Job in the databse in running status
         jobRepository.save(entity);
 
         JobMessage message = new JobMessage();
@@ -111,6 +131,7 @@ public class PtcFileProcessRestController implements JobApi {
         message.setPayloadUrl(blobUrl + "/" + blobId);
 
         try {
+            //Sends the message to the Message Queue
             eventStreamService.produceEvent(message);
         } catch (Exception e) {
             logger.error("Error in Producing Events");
@@ -119,7 +140,7 @@ public class PtcFileProcessRestController implements JobApi {
             throw new MessageCommunicationException(ErrorConstants.ERR_1_CD, ErrorConstants.ERR_1_DESC);
         }
 
-
+        //Sends back the response
         FileResponse response = new FileResponse();
         response.setPayloadSize(String.valueOf(fileRequest.getContent().length()));
         response.setJobId(String.valueOf(entity.getJobId()));
@@ -127,6 +148,11 @@ public class PtcFileProcessRestController implements JobApi {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Validate JWT token and retrieves the client and tenant id
+     * @param authorization
+     * @param entity
+     */
     private void validateJWTToken(String authorization, JobEntity entity) {
         JSONObject obj = ProcessorUtil.decodeJWTToken(authorization);
         if (!obj.has("tid") || !obj.has("oid"))
@@ -136,7 +162,11 @@ public class PtcFileProcessRestController implements JobApi {
         entity.setClientId(String.valueOf(obj.get("oid")));
     }
 
-
+    /**
+     * Validates the Md5 checksum with the requested binary
+     * @param fileRequest
+     * @throws NoSuchAlgorithmException
+     */
     private void validateMd5CheckSum(FileRequest fileRequest) throws NoSuchAlgorithmException {
         if (!ProcessorUtil.isCheckSumValid(fileRequest.getContent(), fileRequest.getMd5())) {
             logger.error("MD5 hash validation failed");

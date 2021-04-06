@@ -14,6 +14,12 @@ import java.util.Base64;
 
 public class ProcessorUtil {
     static Logger logger = LoggerFactory.getLogger(PtcFileProcessRestController.class);
+
+    /**
+     * Decode the JWT token and retrieves the header and the payload
+     * @param token
+     * @return
+     */
     public static JSONObject decodeJWTToken(String token){
 
         String[] chunks = token.split("\\.");
@@ -31,6 +37,13 @@ public class ProcessorUtil {
 
     }
 
+    /**
+     * Validte the incoming md5 hash with the md5 hash of the binary
+     * @param base64Data
+     * @param md5checkSum
+     * @return
+     * @throws NoSuchAlgorithmException
+     */
     public static boolean isCheckSumValid(String base64Data,String md5checkSum) throws NoSuchAlgorithmException {
         byte[] imageByteArray = Base64.getDecoder().decode(base64Data);
         byte[] digest = MessageDigest.getInstance("MD5").digest(imageByteArray);

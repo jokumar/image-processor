@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.web.client.HttpClientErrorException;
 
-
+/**
+ * EVent Consumer to consume the messages from the queue
+ */
 @Configuration
 public class EventConsumer {
     org.slf4j.Logger logger = LoggerFactory.getLogger(EventConsumer.class);
