@@ -1,5 +1,5 @@
 # image-processor
-Event Driven Model for Image Processing
+Event Driven Model for Image Processing using Spring Cloud Stream and  Kafka . The project also covers K8 specific deployment files for the microservices. 
 
 #### Description
 
@@ -20,6 +20,10 @@ The processor-service , worker-service and storage-service are springboot micros
 8.	Processor-service consumes the message from the consumer topic (status_stream)
 9.	Processor-service  retrieves the record for that jobid and update the database entity with respective status.
 
+### Prerequisite
+
+* docker installed . It should be enought to test the end to end application . 
+* for running in Kubernetes cluster , install minikube.
 
 ### Build and Deploy Using Docker 
 
