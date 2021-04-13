@@ -3,7 +3,7 @@ Event Driven Model for Image Processing
 
 #### Description
 
-The processor-service , worker-service and storage-service are springboot microservices. In between, there is a Kafka brokers. When concurrent binary data is being sent to processor service , it would scale to meet the needs and send the job message to the Kafka topic . Based on the number of messages , worker service will start scaling . Storage-service is meant to be a service which can connect to any cloud storage .   ![image](https://user-images.githubusercontent.com/7227769/114632505-bc2d5300-9cb6-11eb-8bdc-b507a45b1ecf.png)
+The processor-service , worker-service and storage-service are springboot microservices. In between, there is a Kafka brokers. When concurrent binary data is being sent to processor service , it would scale to meet the needs and send the job message to the Kafka topic . Based on the number of messages , worker service will start scaling . Storage-service is meant to be a service which can connect to any cloud storage .  
 
 ### Design 
 
